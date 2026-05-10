@@ -123,15 +123,9 @@ PRODUCT_PACKAGES += \
 # Camera
 $(call soong_config_set_bool,samsungCameraVars,needs_sec_reserved_field,true)
 
-ifneq ($(TARGET_IS_TABLET),true)
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/media/media_profiles_kona.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_kona.xml \
     $(LOCAL_PATH)/configs/media/media_profiles_kona.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_V1_0.xml
-else
-PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/configs/media/media_profiles_kona_tablet.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_kona.xml \
-    $(LOCAL_PATH)/configs/media/media_profiles_kona_tablet.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_V1_0.xml
-endif
 
 PRODUCT_PACKAGES += \
     android.hardware.camera.provider-service.samsung
@@ -159,16 +153,14 @@ PRODUCT_PACKAGES += \
     vendor.qti.hardware.display.composer-service \
     vendor.qti.hardware.memtrack-service
 
-ifneq ($(TARGET_IS_TABLET),true)
 PRODUCT_PACKAGES += \
     AdvancedDisplay
-endif
+
 
 # Doze
-ifneq ($(TARGET_IS_TABLET),true)
 PRODUCT_PACKAGES += \
     SamsungDoze
-endif
+
 
 # DRM
 PRODUCT_PACKAGES += \
@@ -185,12 +177,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.biometrics.fingerprint-service.samsung
 
-# FlipFlap
-ifneq ($(TARGET_IS_TABLET),true)
-PRODUCT_PACKAGES += \
-    FlipFlap
-endif
-
 # Gatekeeper
 PRODUCT_PACKAGES += \
     android.hardware.gatekeeper@1.0-service-mdfpp
@@ -204,12 +190,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/permissions/privapp-permissions-hotword.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/privapp-permissions-hotword.xml
 
-# Input configs
-ifeq ($(TARGET_IS_TABLET),true)
-PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/configs/idc/sec_e-pen.idc:$(TARGET_COPY_OUT_VENDOR)/usr/idc/sec_e-pen.idc \
-    $(LOCAL_PATH)/configs/idc/Vendor_04e8_Product_a035.idc:$(TARGET_COPY_OUT_VENDOR)/usr/idc/Vendor_04e8_Product_a035.idc
-endif
 
 # Kernel
 PRODUCT_ENABLE_UFFD_GC := true
@@ -307,10 +287,9 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/power/powerhint.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint.json
 
 # PowerShare
-ifneq ($(TARGET_IS_TABLET),true)
 PRODUCT_PACKAGES += \
     vendor.lineage.powershare-service.samsung
-endif
+
 
 # Public libraries
 PRODUCT_COPY_FILES += \
@@ -327,14 +306,7 @@ PRODUCT_PACKAGES += \
     sehradiomanager
 endif
 
-# S Pen
-ifeq ($(TARGET_IS_TABLET),true)
-PRODUCT_PACKAGES += \
-    SPenActions
 
-PRODUCT_PACKAGES += \
-    vendor.samsung.hardware.spen-service
-endif
 
 # Sensors
 PRODUCT_PACKAGES += \

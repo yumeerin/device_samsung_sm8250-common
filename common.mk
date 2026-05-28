@@ -195,6 +195,23 @@ PRODUCT_COPY_FILES += \
 PRODUCT_ENABLE_UFFD_GC := true
 PRODUCT_SET_DEBUGFS_RESTRICTIONS := true
 
+
+# IMS
+PRODUCT_PACKAGES += \
+    Iwlan \
+    QualifiedNetworksService \
+    PhhIms \
+    android.hardware.telephony.ims.prebuilt.xml \
+
+PRODUCT_COPY_FILES += \
+    $COMMON_PATH)/configs/permissions/privapp-permissions-me.phh.ims.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/permissions/privapp-permissions-me.phh.ims.xml
+     
+PRODUCT_PROPERTY_OVERRIDES += \
+    persist.dbg.volte_avail_ovr=1 \
+    persist.dbg.wfc_avail_ovr=1 \
+    persist.dbg.allow_ims_off=1
+
+
 # Keymaster
 PRODUCT_PACKAGES += \
     android.hardware.keymaster@4.0-service.samsung
@@ -305,7 +322,6 @@ PRODUCT_PACKAGES += \
     secril_config_svc \
     sehradiomanager
 endif
-
 
 
 # Sensors

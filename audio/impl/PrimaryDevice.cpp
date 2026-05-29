@@ -223,22 +223,18 @@ Return<Result> PrimaryDevice::setMode(AudioMode mode) {
     property_get("vendor.calls.slot_id0", simSlot1, "");
     property_get("vendor.calls.slot_id1", simSlot2, "");
 
-    // STEP 1: Let Samsung evaluate original IN_CALL state to track the SIM slots
+    // STEP 1: Let Samsung evaluate original IN_CALL state to map the SIM slots
     if (mode == AudioMode::IN_CALL) {
-        // Safe check without infinite loop locking
         if (strcmp(simSlot1, "0") == 0 && strcmp(simSlot2, "0") == 0) {
-            // Give the radio properties a split millisecond to populate
-            usleep(10000); 
+            usleep(10000); // 10ms quick pause to allow props to register
             property_get("vendor.calls.slot_id0", simSlot1, "");
             property_get("vendor.calls.slot_id1", simSlot2, "");
         }
     }
 
     if (strcmp(simSlot1, "1") == 0) {
-        // SIM1 Active
         mDevice->halSetParameters("g_call_sim_slot=0x01");
     } else if (strcmp(simSlot2, "1") == 0) {
-        // SIM2 Active
         mDevice->halSetParameters("g_call_sim_slot=0x02");
     }
 
@@ -256,18 +252,27 @@ Return<Result> PrimaryDevice::setMode(AudioMode mode) {
             return Result::INVALID_ARGUMENTS;
     }
 
-    // STEP 2: Now convert to targetMode and safely remap it for the proprietary driver layer
     audio_mode_t targetMode = static_cast<audio_mode_t>(mode);
 
+    // STEP 2: Smart Interception Bypass
     if (targetMode == AUDIO_MODE_IN_CALL &&
         (::android::base::GetBoolProperty("ro.vendor.audio.map_incall_to_communication", false) ||
          ::android::base::GetBoolProperty("persist.vendor.audio.map_incall_to_communication", false))) {
-        ALOGW("%s: map_incall_to_communication: remapping AUDIO_MODE_IN_CALL -> AUDIO_MODE_IN_COMMUNICATION",
-              __func__);
-        targetMode = AUDIO_MODE_IN_COMMUNICATION;
+        
+        char callState[92];
+        property_get("vendor.calls.state", callState, "0");
+
+        // ONLY remap to IN_COMMUNICATION if the modem indicates the call has actually connected/dialed
+        // On Qualcomm/Samsung, state "0" is IDLE/DIALING setup, state "2" or "3" is ACTIVE/DIALED
+        if (strcmp(callState, "0") != 0) {
+            ALOGW("%s: map_incall_to_communication: Call state is active (%s). Remapping to IN_COMMUNICATION",
+                  __func__, callState);
+            targetMode = AUDIO_MODE_IN_COMMUNICATION;
+        } else {
+            ALOGI("%s: map_incall_to_communication: Outgoing call initialization phase. Preserving IN_CALL for modem setup.", __func__);
+        }
     }
 
-    // STEP 3: Return using your device tree's native analyzeStatus wrapper
     return mDevice->analyzeStatus(
         "set_mode",
         mDevice->device()->set_mode(mDevice->device(), targetMode));

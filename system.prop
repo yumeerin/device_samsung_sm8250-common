@@ -18,3 +18,6 @@ ro.netflix.bsp_rev=Q8250-19134-1
 
 # Enable background blur
 ro.surface_flinger.supports_background_blur=1
+
+# switch to in communication
+ro.vendor.audio.map_incall_to_communication=true

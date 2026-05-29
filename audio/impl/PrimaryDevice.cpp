@@ -22,6 +22,8 @@
 #include <cutils/properties.h>
 #include <string.h>
 
+#include <android-base/properties.h>
+
 #if MAJOR_VERSION >= 4
 #include <cmath>
 #endif
@@ -218,29 +220,29 @@ Return<Result> PrimaryDevice::setMode(AudioMode mode) {
 
     char simSlot1[92], simSlot2[92];
 
-    // These props return either 0 (not calling),
-    // or 1 (SIM is calling)
     property_get("vendor.calls.slot_id0", simSlot1, "");
     property_get("vendor.calls.slot_id1", simSlot2, "");
 
-    // Wait until one sim slot reports a call
+    // STEP 1: Let Samsung evaluate original IN_CALL state to track the SIM slots
     if (mode == AudioMode::IN_CALL) {
-        while (strcmp(simSlot1, "0") == 0 && strcmp(simSlot2, "0") == 0) {
+        // Safe check without infinite loop locking
+        if (strcmp(simSlot1, "0") == 0 && strcmp(simSlot2, "0") == 0) {
+            // Give the radio properties a split millisecond to populate
+            usleep(10000); 
             property_get("vendor.calls.slot_id0", simSlot1, "");
             property_get("vendor.calls.slot_id1", simSlot2, "");
         }
     }
 
     if (strcmp(simSlot1, "1") == 0) {
-        // SIM1
+        // SIM1 Active
         mDevice->halSetParameters("g_call_sim_slot=0x01");
     } else if (strcmp(simSlot2, "1") == 0) {
-        // SIM2
+        // SIM2 Active
         mDevice->halSetParameters("g_call_sim_slot=0x02");
     }
 
-    // INVALID, CURRENT, CNT, MAX are reserved for internal use.
-    // TODO: remove the values from the HIDL interface
+    // Sanity checks for valid HIDL arguments
     switch (mode) {
         case AudioMode::NORMAL:
         case AudioMode::RINGTONE:
@@ -249,14 +251,26 @@ Return<Result> PrimaryDevice::setMode(AudioMode mode) {
 #if MAJOR_VERSION >= 6
         case AudioMode::CALL_SCREEN:
 #endif
-            break;  // Valid values
+            break;
         default:
             return Result::INVALID_ARGUMENTS;
-    };
+    }
 
+    // STEP 2: Now convert to targetMode and safely remap it for the proprietary driver layer
+    audio_mode_t targetMode = static_cast<audio_mode_t>(mode);
+
+    if (targetMode == AUDIO_MODE_IN_CALL &&
+        (::android::base::GetBoolProperty("ro.vendor.audio.map_incall_to_communication", false) ||
+         ::android::base::GetBoolProperty("persist.vendor.audio.map_incall_to_communication", false))) {
+        ALOGW("%s: map_incall_to_communication: remapping AUDIO_MODE_IN_CALL -> AUDIO_MODE_IN_COMMUNICATION",
+              __func__);
+        targetMode = AUDIO_MODE_IN_COMMUNICATION;
+    }
+
+    // STEP 3: Return using your device tree's native analyzeStatus wrapper
     return mDevice->analyzeStatus(
         "set_mode",
-        mDevice->device()->set_mode(mDevice->device(), static_cast<audio_mode_t>(mode)));
+        mDevice->device()->set_mode(mDevice->device(), targetMode));
 }
 
 Return<void> PrimaryDevice::getBtScoNrecEnabled(getBtScoNrecEnabled_cb _hidl_cb) {

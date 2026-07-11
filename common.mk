@@ -199,7 +199,6 @@ PRODUCT_SET_DEBUGFS_RESTRICTIONS := true
 # IMS
 PRODUCT_PACKAGES += \
     Iwlan \
-    CarrierConfigResCommon \
     QualifiedNetworksService \
     PhhIms \
     android.hardware.telephony.ims.prebuilt.xml \
